@@ -1,3 +1,34 @@
-/warpscout
-/warpscout-account.json
-/warpscout-report-*.txt
+# Go
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Wails build
+gui/build/bin/
+gui/frontend/dist/
+gui/frontend/node_modules/
+gui/frontend/package.json.md5
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Runtime data
+account.json
+settings.json
+update-cache.json
+history/
+last-junk.json
+last-sni-*.json
+
+# Obsidian
+.obsidian/
+
+# Wails generated
+gui/frontend/wailsjs/

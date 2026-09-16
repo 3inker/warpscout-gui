@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WarpScout</title>
+    <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Верхняя панель -->
+        <header class="topbar">
+            <span class="logo">WarpScout</span>
+            <nav class="tabs">
+                <button class="tab-btn active" data-tab="scan" data-i18n="tabs.scan">Сканирование</button>
+                <button class="tab-btn" data-tab="tools" data-i18n="tabs.tools">Инструменты</button>
+                <button class="tab-btn" data-tab="history" data-i18n="tabs.history"> История</button>
+                <button class="tab-btn" data-tab="settings" data-i18n="tabs.settings">Настройки</button>
+                <button class="tab-btn" data-tab="help" data-i18n="tabs.help">Помощь</button>
+            </nav>
+            <button id="update-indicator" class="icon-btn" data-i18n-title="update.available" title="Доступно обновление" style="display: none;">
+                🔔<span class="update-dot"></span>
+            </button>
+        </header>
+        <!-- Вкладка: Сканирование -->
+        <section class="tab-content active" id="tab-scan">
+            <!-- Панель управления -->
+            <section class="controls">
+               <section class="advanced-panel" id="advanced-panel" style="display: none;">
+                    <div class="advanced-header" data-i18n="advanced.title">Продвинутый режим</div>
+                    <div class="advanced-grid">
+                        <label>
+                            <span data-i18n="advanced.customTarget">Свои адреса (CIDR)</span>
+                            <input type="text" id="adv-custom-target" placeholder="162.159.192.0/24, 8.6.112.0/24">
+                        </label>
+                        <label>
+                            <span data-i18n="advanced.port">Порт</span>
+                            <input type="number" id="adv-port" placeholder="2408" min="0" max="65535">
+                        </label>
+                        <label data-i18n-title="advanced.sweepPortsHint" title="Для сетей, где стандартные порты (2408, 500, 1701, 4500) закрыты. Перебирает дополнительные порты Cloudflare.">
+                            <span data-i18n="advanced.sweepPorts">Перебор портов</span>
+                            <select id="adv-sweep-ports">
+                                <option value="" selected data-i18n="advanced.sweepNone">Не использовать</option>
+                                <option value="open" data-i18n="advanced.sweepOpen">Открытые (доп. проверка)</option>
+                                <option value="all" data-i18n="advanced.sweepAll">Все известные (для строгих сетей)</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span data-i18n="advanced.mtu">MTU</span>
+                            <input type="number" id="adv-mtu" placeholder="1280" min="576" max="1500">
+                        </label>
+                        <label>
+                            <span data-i18n="advanced.dns">DNS</span>
+                            <input type="text" id="adv-dns" placeholder="1.1.1.1, 1.0.0.1">
+                        </label>
+                        <label>
+                            <span data-i18n="advanced.bestBy">Критерий лучшего</span>
+                            <select id="adv-best-by">
+                                <option value="ping" selected data-i18n="advanced.bestByPing">Пинг</option>
+                                <option value="speed" data-i18n="advanced.bestBySpeed">Скорость</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span data-i18n="advanced.pingTarget">Цель пинга</span>
+                            <input type="text" id="adv-ping-target" placeholder="1.1.1.1">
+                        </label>
+                        <label>
+                            <span data-i18n="advanced.tunPingCount">Echo-запросов</span>
+                            <input type="number" id="adv-tun-ping-count" placeholder="10" min="0" max="100">
+                        </label>
+                        <label>
+                            <span data-i18n="advanced.awgJc">AWG jc (junk count)</span>
+                            <input type="number" id="adv-awg-jc" placeholder="6" min="0" max="100">
+                        </label>
+                        <label>
+                            <span data-i18n="advanced.awgJmin">AWG jmin (min size)</span>
+                            <input type="number" id="adv-awg-jmin" placeholder="10" min="0" max="1500">
+                        </label>
+                        <label>
+                            <span data-i18n="advanced.awgJmax">AWG jmax (max size)</span>
+                            <input type="number" id="adv-awg-jmax" placeholder="50" min="0" max="1500">
+                        </label>
+                        <label>
+                            <span data-i18n="advanced.awgI1">AWG I1 (init packet)</span>
+                            <input type="text" id="adv-awg-i1" placeholder="оставьте пустым для iCloud">
+                        </label>
+                        <label>
+                            <span data-i18n="advanced.i1Host">Домен для I1</span>
+                            <div class="input-with-btn">
+                                <input type="text" id="adv-i1-host" placeholder="www.google.com">
+                                <button id="gen-i1-btn" class="secondary-btn" data-i18n="advanced.generate">Сгенерировать</button>
+                            </div>
+                        </label>
+                        <label>
+                            <span data-i18n="advanced.masqueSni">MASQUE SNI</span>
+                            <input type="text" id="adv-masque-sni" placeholder="consumer-masque.cloudflareclient.com">
+                        </label>
+                        <label>
+                            <span data-i18n="advanced.throughEndpoint">Через эндпоинт (ip:port)</span>
+                            <input type="text" id="adv-through-endpoint" placeholder="162.159.192.28:2408">
+                        </label>
+                        <label>
+                            <span data-i18n="advanced.innerProtocol">Протокол внутреннего туннеля</span>
+                            <select id="adv-inner-protocol">
+                                <option value="awg" selected>AmneziaWG</option>
+                                <option value="wg">WireGuard</option>
+                            </select>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="adv-speed-test">
+                            <span data-i18n="advanced.speedTest">Замер скорости</span>
+                        </label>
+                    </div>
+                </section> 
+                <div class="controls-row">
+                    <button id="scan-btn" class="primary-btn" data-i18n="scan.start">Сканировать</button>
+                    <button id="stop-btn" class="secondary-btn" disabled data-i18n="scan.stop">Стоп</button>
+                    <label class="select-label">
+                        <span data-i18n="scan.protocol">Протокол:</span>
+                        <select id="protocol-select">
+                            <option value="awg" selected>AmneziaWG</option>
+                            <option value="wg">WireGuard</option>
+                            <option value="masque">MASQUE (QUIC)</option>
+                            <option value="masque-h2">MASQUE (TCP)</option>
+                        </select>
+                    </label>
+                    <label class="select-label">
+                        <span data-i18n="scan.preset">Пресет:</span>
+                        <select id="preset-select">
+                            <option value="standard" selected>Standard</option>
+                            <option value="durable">Durable</option>
+                            <option value="full">Full</option>
+                        </select>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="advanced-toggle">
+                        <span data-i18n="scan.advanced">Продвинутые параметры</span>
+                    </label>
+                </div>
+                <div class="controls-row">
+                    <label>
+                        <span data-i18n="scan.excludeNodes">Исключить узлы:</span>
+                        <input type="text" id="exclude-node" placeholder="DME, HEL">
+                    </label>
+                    <label>
+                        <span data-i18n="scan.excludeCountry">Исключить страны:</span>
+                        <input type="text" id="exclude-country" placeholder="RU, IR">
+                    </label>
+                </div>
+                <div class="controls-row">
+                    <label>
+                        <span data-i18n="scan.includeNodes">Включить узлы:</span>
+                        <input type="text" id="include-node" placeholder="HEL, ARN">
+                    </label>
+                    <label>
+                        <span data-i18n="scan.includeCountry">Включить страны:</span>
+                        <input type="text" id="include-country" placeholder="FI, SE">
+                    </label>
+                </div>
+                <div class="controls-row">
+                    <label class="select-label">
+                        <span data-i18n="scan.format">Формат:</span>
+                        <select id="format-select">
+                            <option value="amneziawg" selected>AmneziaWG</option>
+                            <option value="wireguard">WireGuard</option>
+                            <option value="usque">usque</option>
+                            <option value="mihomo">Mihomo</option>
+                        </select>
+                    </label>
+                    <button id="save-best-btn" class="secondary-btn" data-i18n="scan.saveBest">Сохранить лучший</button>
+                    <button id="save-selected-btn" class="secondary-btn" disabled data-i18n="scan.saveSelected">Сохранить выбранный</button>
+                    <button id="save-report-btn" class="secondary-btn" data-i18n="scan.saveReport">Сохранить отчёт</button>
+                </div>
+            </section>
+            <!-- Таблица результатов -->
+            <section class="results">
+                <table id="results-table">
+                    <thead id="results-head">
+                        <!-- Заполняется динамически -->
+                    </thead>
+                    <tbody id="results-body">
+                        <tr class="empty-row">
+                            <td colspan="1" data-i18n="table.pressScan">Нажмите «Сканировать», чтобы начать</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+        </section>
+         <!-- Вкладка: Инструменты -->
+        <section class="tab-content" id="tab-tools">
+            <div class="tools-container">
+                <div class="tool-card">
+                    <h2 data-i18n="tools.accountTitle">Аккаунт</h2>
+                    <p class="tool-desc" data-i18n="tools.accountDesc">WARP-аккаунт нужен для сканирования. Он создаётся автоматически при первом запуске.</p>
+                    <div class="account-info">
+                        <div class="account-status-row">
+                            <span class="account-label" data-i18n="tools.accountStatus">Статус:</span>
+                            <span id="account-status-text" class="account-status">–</span>
+                        </div>
+                    </div>
+                    <div class="tool-controls">
+                        <button id="account-register-btn" class="primary-btn" data-i18n="tools.accountRegister">Зарегистрировать заново</button>
+                        <button id="account-forget-btn" class="secondary-btn" data-i18n="tools.accountForget">Забыть аккаунт</button>
+                    </div>
+                </div>
+                <div class="tool-card">
+                    <h2 data-i18n="tools.findJunkTitle">Поиск AWG junk</h2>
+                    <p class="tool-desc" data-i18n="tools.findJunkDesc">Подбирает параметры AmneziaWG (jc, jmin, jmax, i1), которые проходят через DPI.</p>
+                    <div class="tool-controls">
+                        <button id="find-junk-btn" class="primary-btn" data-i18n="tools.start">Запустить</button>
+                        <button id="find-junk-stop-btn" class="secondary-btn" disabled data-i18n="tools.stop">Остановить</button>
+                        <button id="find-junk-last-btn" class="secondary-btn" data-i18n="tools.lastSearch">Последний поиск</button>
+                    </div>
+                    <div class="tool-progress" id="junk-progress" style="display: none;">
+                        <div class="progress-text" id="junk-progress-text" data-i18n="tools.preparing">Подготовка...</div>
+                    </div>
+                    <div class="tool-result" id="junk-result" style="display: none;">
+                        <h3 data-i18n="tools.bestSet">Лучший набор</h3>
+                        <div class="junk-best" id="junk-best"></div>
+                        <h3 data-i18n="tools.attempts">Попытки</h3>
+                        <table class="junk-attempts">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>jc</th>
+                                    <th>jmin</th>
+                                    <th>jmax</th>
+                                    <th data-i18n="tools.working">Работает</th>
+                                </tr>
+                            </thead>
+                            <tbody id="junk-attempts-body"></tbody>
+                        </table>
+                        <div class="junk-actions">
+                            <button id="junk-apply-btn" class="primary-btn" data-i18n="tools.apply">Применить к сканированию</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="tool-card">
+                    <h2 data-i18n="tools.findSniTitle">Поиск MASQUE SNI</h2>
+                    <p class="tool-desc" data-i18n="tools.findSniDesc">Подбирает SNI для MASQUE, который проходит через DPI. Работает только с протоколами MASQUE.</p>
+                    <div class="tool-controls">
+                        <label>
+                            <span data-i18n="tools.protocol">Протокол</span>
+                            <select id="sni-protocol">
+                                <option value="masque" selected>MASQUE (QUIC)</option>
+                                <option value="masque-h2">MASQUE (TCP)</option>
+                            </select>
+                        </label>
+                        <button id="find-sni-btn" class="primary-btn" data-i18n="tools.start">Запустить</button>
+                        <button id="find-sni-stop-btn" class="secondary-btn" disabled data-i18n="tools.stop">Остановить</button>
+                        <button id="find-sni-last-btn" class="secondary-btn" data-i18n="tools.lastSearch">Последний поиск</button>
+                    </div>
+                    <div class="tool-progress" id="sni-progress" style="display: none;">
+                        <div class="progress-text" id="sni-progress-text" data-i18n="tools.preparing">Подготовка...</div>
+                    </div>
+                    <div class="tool-result" id="sni-result" style="display: none;">
+                        <h3 data-i18n="tools.bestSni">Лучший SNI</h3>
+                        <div class="sni-best" id="sni-best"></div>
+                        <h3 data-i18n="tools.attempts">Попытки</h3>
+                        <table class="junk-attempts">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>SNI</th>
+                                    <th data-i18n="tools.working">Работает</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sni-attempts-body"></tbody>
+                        </table>
+                        <div class="junk-actions">
+                            <button id="sni-apply-btn" class="primary-btn" data-i18n="tools.apply">Применить к сканированию</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="tool-card">
+                    <h2 data-i18n="tools.socksTitle">SOCKS-прокси</h2>
+                    <p class="tool-desc" data-i18n="tools.socksDesc">Запускает локальный SOCKS5-прокси через выбранный эндпоинт. Можно использовать в браузере или другом приложении.</p>
+                    <div class="tool-controls">
+                        <label>
+                            <span data-i18n="tools.endpoint">Эндпоинт (ip:port)</span>
+                            <input type="text" id="socks-endpoint" placeholder="162.159.192.28:2408">
+                        </label>
+                        <label>
+                            <span data-i18n="tools.localPort">Локальный порт</span>
+                            <input type="number" id="socks-port" value="1080" min="1" max="65535">
+                        </label>
+                        <label>
+                            <span data-i18n="tools.protocol">Протокол</span>
+                            <select id="socks-protocol">
+                                <option value="awg" selected>AmneziaWG</option>
+                                <option value="wg">WireGuard</option>
+                            </select>
+                        </label>
+                        <button id="socks-start-btn" class="primary-btn" data-i18n="tools.start">Запустить</button>
+                        <button id="socks-stop-btn" class="secondary-btn" disabled data-i18n="tools.stop">Остановить</button>
+                    </div>
+                    <div class="tool-progress" id="socks-status" style="display: none;">
+                        <div class="progress-text success-text" id="socks-status-text" data-i18n="tools.starting">Запуск...</div>
+                        <div class="socks-hint" id="socks-hint" style="display: none;">
+                            <p>
+                                <span data-i18n="tools.socksHint1">В настройках нужной программы выберите тип</span>
+                                <strong>SOCKS5</strong>,
+                                <span data-i18n="tools.socksHint2">укажите адрес</span>
+                                <code>127.0.0.1</code>
+                                <span data-i18n="tools.socksHint3">и порт</span>
+                                <code id="socks-port-hint">1080</code>.
+                            </p>
+                            <p class="socks-urls">
+                                <span data-i18n="tools.socksHint4">Если программа поддерживает указание схемы:</span>
+                                <code id="socks-addr-h">socks5h://127.0.0.1:1080</code>
+                                <span data-i18n="tools.socksHint5">(DNS через прокси) или</span>
+                                <code id="socks-addr">socks5://127.0.0.1:1080</code>
+                                <span data-i18n="tools.socksHint6">(DNS локально).</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Вкладка: История -->
+        <section class="tab-content" id="tab-history">
+            <div class="history-container">
+                <div class="history-header">
+                    <h2 data-i18n="history.title">История сканирований</h2>
+                    <button id="history-refresh-btn" class="secondary-btn" data-i18n="history.refresh">Обновить</button>
+                </div>
+                <div id="history-list" class="history-list">
+                    <div class="placeholder" data-i18n="history.loading">Загрузка...</div>
+                </div>
+            </div>
+        </section>
+        <!-- Вкладка: Настройки -->
+        <section class="tab-content" id="tab-settings">
+            <div class="settings-container">
+                <h2 data-i18n="settings.title">Настройки</h2>
+                <div class="settings-group">
+                    <h3 data-i18n="settings.defaults">Сканирование по умолчанию</h3>
+                    <div class="settings-grid">
+                        <label>
+                            <span data-i18n="settings.protocol">Протокол</span>
+                            <select id="set-protocol">
+                                <option value="awg">AmneziaWG</option>
+                                <option value="wg">WireGuard</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span data-i18n="settings.preset">Пресет</span>
+                            <select id="set-preset">
+                                <option value="standard">Standard</option>
+                                <option value="durable">Durable</option>
+                                <option value="full">Full</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span data-i18n="settings.sample">Адресов на подсеть</span>
+                            <input type="number" id="set-sample" min="1" max="256">
+                        </label>
+                        <label>
+                            <span data-i18n="settings.timeout">Таймаут (сек)</span>
+                            <input type="number" id="set-timeout" min="1" max="30">
+                        </label>
+                        <label>
+                            <span data-i18n="settings.tunPingCount">Echo-запросов</span>
+                            <input type="number" id="set-tun-ping-count" min="0" max="100">
+                        </label>
+                        <label>
+                            <span data-i18n="settings.mtu">MTU</span>
+                            <input type="number" id="set-mtu" min="0" max="1500">
+                        </label>
+                        <label>
+                            <span data-i18n="settings.dns">DNS</span>
+                            <input type="text" id="set-dns" placeholder="1.1.1.1, 1.0.0.1">
+                        </label>
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <h3 data-i18n="settings.appearance">Внешний вид</h3>
+                    <div class="settings-grid">
+                        <label>
+                            <span data-i18n="settings.theme">Тема</span>
+                            <select id="set-theme">
+                                <option value="system" data-i18n="settings.themeSystem">Как в системе</option>
+                                <option value="blacksoft">BlackSoft</option>
+                                <option value="qdarkstyle">QDarkStyle</option>
+                                <option value="flatgray">FlatGray</option>
+                                <option value="light">Light</option>
+                                <option value="lightblue">LightBlue</option>
+                                <option value="softpink">SoftPink</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span data-i18n="settings.language">Язык</span>
+                            <select id="set-language">
+                                <option value="ru">Русский</option>
+                                <option value="en">English</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+                <div class="settings-group">
+                    <h3 data-i18n="settings.history">История</h3>
+                    <div class="settings-grid">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="set-save-history">
+                            <span data-i18n="settings.saveHistory">Сохранять историю сканирований</span>
+                        </label>
+                        <label>
+                            <span data-i18n="settings.historyLimit">Максимум записей</span>
+                            <input type="number" id="set-history-limit" min="1" max="500">
+                        </label>
+                    </div>
+                </div>
+                <div class="settings-group" id="updates-section">
+                    <h3 data-i18n="settings.updates">Обновления</h3>
+                    <div class="update-info">
+                        <div class="update-info-row">
+                            <span class="update-label" data-i18n="settings.currentVersion">Текущая версия:</span>
+                            <span id="current-version">–</span>
+                        </div>
+                        <div class="update-info-row" id="update-latest-row" style="display: none;">
+                            <span class="update-label" data-i18n="settings.latestVersion">Доступна версия:</span>
+                            <span id="latest-version">–</span>
+                        </div>
+                        <div class="update-info-row" id="update-status-row">
+                            <span id="update-status-text" class="update-status" data-i18n="settings.checking">Проверка...</span>
+                        </div>
+                        <div class="update-actions">
+                            <button id="check-updates-btn" class="secondary-btn" data-i18n="settings.checkUpdates">Проверить обновления</button>
+                            <button id="download-update-btn" class="primary-btn" style="display: none;" data-i18n="settings.downloadUpdate">Скачать обновление</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-actions">
+                    <button id="settings-save-btn" class="primary-btn" data-i18n="settings.save">Сохранить</button>
+                    <button id="settings-reset-btn" class="secondary-btn" data-i18n="settings.reset">Сбросить к умолчаниям</button>
+                    <button id="settings-export-btn" class="secondary-btn" data-i18n="settings.export">Экспорт</button>
+                    <button id="settings-import-btn" class="secondary-btn" data-i18n="settings.import">Импорт</button>
+                    <span id="settings-status" class="settings-status"></span>
+                </div>
+            </div>
+        </section>
+        <!-- Вкладка: Помощь -->
+        <section class="tab-content" id="tab-help">
+            <div class="help-container">
+                <h2 data-i18n="help.title">Как найти рабочий эндпоинт</h2>
+                <div class="help-section">
+                    <h3 data-i18n="help.step1Title">1. Запустите сканирование</h3>
+                    <p data-i18n="help.step1Text">Выберите протокол AmneziaWG и пресет Standard. Нажмите «Сканировать».</p>
+                </div>
+                <div class="help-section">
+                    <h3 data-i18n="help.step2Title">2. Посмотрите на узлы</h3>
+                    <p data-i18n="help.step2Text">В таблице есть колонка NODE. Это код дата-центра Cloudflare: DME – Москва, HEL – Хельсинки, ARN – Стокгольм, и другие.</p>
+                </div>
+                <div class="help-section">
+                    <h3 data-i18n="help.step3Title">3. Узлы в России часто блокируются</h3>
+                    <p data-i18n="help.step3Text">Если эндпоинты через DME не работают с нужными сервисами, исключите их:</p>
+                    <ul>
+                        <li><span data-i18n="help.step3Item1">Поле «Исключить узлы»</span> → <code>DME</code></li>
+                        <li><span data-i18n="help.step3Item2">Поле «Исключить страны»</span> → <code>RU</code></li>
+                    </ul>
+                </div>
+                <div class="help-section">
+                    <h3 data-i18n="help.step4Title">4. Оставьте только нужные</h3>
+                    <p data-i18n="help.step4Text">Если хотите конкретные узлы:</p>
+                    <ul>
+                        <li><span data-i18n="help.step4Item1">Поле «Включить узлы»</span> → <code>HEL, ARN</code></li>
+                        <li><span data-i18n="help.step4Item2">Поле «Включить страны»</span> → <code>FI, SE</code></li>
+                    </ul>
+                </div>
+                <div class="help-section">
+                    <h3 data-i18n="help.step5Title">5. Настройте параметры сканирования</h3>
+                    <p data-i18n="help.step5Text">Откройте «Продвинутые параметры»:</p>
+                    <ul>
+                        <li><strong>SamplePerSubnet</strong> – <span data-i18n="help.step5Item1">сколько адресов проверять в подсети (больше = дольше, но полнее)</span></li>
+                        <li><strong>TunnelPingCount</strong> – <span data-i18n="help.step5Item2">добавьте 10, чтобы увидеть Tun Ping и Потери</span></li>
+                        <li><strong>SpeedTest</strong> – <span data-i18n="help.step5Item3">замер скорости (долго, но полезно)</span></li>
+                    </ul>
+                </div>
+                <div class="help-section">
+                    <h3 data-i18n="help.step6Title">6. Сохраните конфиг</h3>
+                    <p data-i18n="help.step6Text">Кликните на строку с лучшим эндпоинтом и нажмите «Сохранить выбранный». Или «Сохранить лучший» – для самого быстрого.</p>
+                </div>
+                <div class="help-section">
+                    <h3 data-i18n="help.tipsTitle">Полезные советы</h3>
+                    <ul>
+                        <li><span data-i18n="help.tip1">Если стандартные порты заблокированы – используйте «Перебор портов» в продвинутой панели.</span></li>
+                        <li><span data-i18n="help.tip2">Если AmneziaWG не проходит – попробуйте MASQUE (TCP), он часто работает там, где AWG блокируется.</span></li>
+                        <li><span data-i18n="help.tip3">Если ничего не находит – запустите «Поиск AWG junk» на вкладке «Инструменты».</span></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        <!-- Оверлей регистрации -->
+        <div id="register-overlay" class="overlay" style="display: none;">
+            <div class="overlay-content">
+                <div class="overlay-spinner"></div>
+                <h3 data-i18n="overlay.registering">Регистрация аккаунта WARP...</h3>
+                <p class="overlay-hint" data-i18n="overlay.registeringHint">Это может занять до минуты. Пожалуйста, подождите.</p>
+                <p class="overlay-progress" id="overlay-progress"></p>
+            </div>
+        </div>
+        <!-- Контекстное меню -->
+        <div id="context-menu" class="context-menu" style="display: none;">
+            <button class="context-menu-item" data-action="copy" data-i18n="context.copy">Копировать эндпоинт</button>
+            <button class="context-menu-item" data-action="save" data-i18n="context.save">Сохранить конфиг</button>
+            <button class="context-menu-item" data-action="socks" data-i18n="context.socks">Запустить SOCKS</button>
+            <button class="context-menu-item" data-action="through" data-i18n="context.through">Через этот эндпоинт</button>
+        </div>
+        <!-- Строка статуса -->
+        <footer class="statusbar">
+            <span id="status-text" data-i18n="status.ready">Готово к работе</span>
+        </footer>
+    </div>
+    <script src="/src/main.js" type="module"></script>
+</body>
+</html>
