@@ -83,7 +83,7 @@ type UpdateInfo struct {
     Error       string `json:"error,omitempty"`
 }
 
-const CurrentVersion = "0.2.0"
+const CurrentVersion = "0.2.1"
 const checkForUpdatesURL = "https://api.github.com/repos/3inker/warpscout-gui/releases/latest"
 
 // UpdateCache — кеш проверки обновлений.
