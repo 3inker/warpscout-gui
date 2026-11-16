@@ -33,7 +33,8 @@ jobs:
           if (Test-Path $infoFile) {
               $info = Get-Content $infoFile -Raw | ConvertFrom-Json
               $info.fixed.file_version = "$version.0"
-              $info.info.0000.ProductVersion = "$version.0"
+              $info.info.'0000'.ProductVersion = "$version.0"
+              
               $info | ConvertTo-Json -Depth 10 | Set-Content $infoFile
           }
 
