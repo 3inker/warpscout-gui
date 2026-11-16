@@ -516,8 +516,24 @@ function renderResults(endpoints) {
                         pColor = '#ff9800'; // Оранжевый
                     }                    
                     return `<td style="color: ${pColor}; font-weight: 500;">${p.toFixed(0)} ${ms}</td>`;
-                case 'tunnelPing': return `<td>${ep.tunnelPingMs ? ep.tunnelPingMs.toFixed(0) + ' ' + ms : '—'}</td>`;
-                case 'loss':       return `<td>${ep.lossPercent ? ep.lossPercent.toFixed(0) + percent : '—'}</td>`;
+                case 'tunnelPing':
+                    if (!ep.tunnelPingMs) return `<td>—</td>`;
+                    const tp = ep.tunnelPingMs;
+                    let tpColor = '#f44336';
+                    if (tp < 50) tpColor = '#4caf50';
+                    else if (tp < 150) tpColor = '#ff9800';
+                    return `<td style="color: ${tpColor}; font-weight: 500;">${tp.toFixed(0)} ${ms}</td>`;
+
+                case 'loss':
+                    if (ep.lossPercent == null) return `<td>—</td>`;
+                    const lp = ep.lossPercent;
+                    let lpColor = '#f44336'; // Красный (если потери большие)
+                    if (lp === 0) {
+                        lpColor = '#4caf50'; // Зеленый (идеально)
+                    } else if (lp <= 10) {
+                        lpColor = '#ff9800'; // Желтый (терпимо)
+                    }
+                    return `<td style="color: ${lpColor}; font-weight: 500;">${lp.toFixed(0)} ${percent}</td>`;
                 case 'speed':      return `<td>${ep.speedMbps ? ep.speedMbps.toFixed(1) + ' ' + mbps : '—'}</td>`;
                 case 'tg':
                     if (ep.telegram_status === 'ok') {
