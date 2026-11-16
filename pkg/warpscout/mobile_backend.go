@@ -105,7 +105,12 @@ func (b *MobileBackend) Scan(ctx context.Context, input core.Account, scan core.
 	}
 
 	progress := newMobileEmitter(core.OperationScan, sink)
-	ph, err := runScan(ctx, opts, run, ips, timeout, progress.Emit)
+	automaticI1 := scan.Protocol == core.ProtocolAWG && scan.AWGI1 == ""
+
+	ph, err := scanWithI1(ctx, automaticI1, sink, func() (phaseResult, error) {
+	    return runScan(ctx, opts, run, ips, timeout, progress.Emit)
+	})
+
 	if err != nil {
 		return core.ScanReport{}, operationFailure(ctx, "scan_failed", err, true)
 	}
@@ -565,6 +570,8 @@ func mobileScanOptions(scan core.ScanOptions) (options, error) {
 		masqueSNI = scan.MASQUESNI
 	}
 	masqueAttempts = positiveOr(scan.MASQUEAttempts, masqueDefaultAttempts)
+	opts.tg = scan.CheckTelegram
+	opts.tgOnly = scan.TelegramOnly
 	return opts, nil
 }
 
@@ -648,6 +655,16 @@ func mobileEndpoint(result endpointResult) core.EndpointResult {
 		SpeedMbps:      result.speed,
 		Working:        result.ok,
 		Durable:        result.durable,
+		TelegramStatus: func() string {
+			if !result.tgSeen {
+				return ""
+			}
+			if result.tgOK {
+				return "ok"
+			}
+			return tgPartialStr(result.tgDCs)
+		}(),
+		TelegramPing: int64(result.tg.Milliseconds()),
 	}
 }
 
@@ -767,6 +784,16 @@ func (e *mobileEmitter) Emit(message tea.Msg) {
 			LossPercent:    float64(value.loss) * 100,
 			Working:        true,
 			Durable:        !value.torn,
+			TelegramStatus: func() string {
+				if !value.tgSeen {
+					return ""
+				}
+				if value.tgOK {
+					return "ok"
+				}
+				return tgPartialStr(value.tgDCs)
+			}(),
+			TelegramPing: int64(value.tg.Milliseconds()),
 		}
 		event.Type = "endpoint"
 		event.Endpoint = &endpoint

@@ -58,6 +58,10 @@ type endpointResult struct {
 	measured bool          // tunPing/loss were sampled (-tun-ping)
 	ok       bool
 	durable  bool
+	tgSeen 	 bool          // Флаг: проверка TG запускалась
+	tg    	 time.Duration // RTT до самого медленного дата-центра
+	tgDCs 	 uint8         // Битовая маска доступных дата-центров
+	tgOK  	 bool          // Все ли 5 DC ответили
 }
 
 func (r endpointResult) sortPing() time.Duration {

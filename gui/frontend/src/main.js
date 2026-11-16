@@ -53,8 +53,8 @@ const saveBestBtn = document.getElementById('save-best-btn');
 const saveSelectedBtn = document.getElementById('save-selected-btn');
 const saveReportBtn = document.getElementById('save-report-btn');
 
-//const tgCheck = document.getElementById('tg-check');
-//const tgOnlyCheck = document.getElementById('tg-only-check');
+const tgCheck = document.getElementById('tg-check');
+const tgOnlyCheck = document.getElementById('tg-only-check');
 
 const tabButtons = document.querySelectorAll('.tab-btn');
 const tabContents = document.querySelectorAll('.tab-content');
@@ -90,15 +90,6 @@ const socksStatusText = document.getElementById('socks-status-text');
 const historyList = document.getElementById('history-list');
 const historyRefreshBtn = document.getElementById('history-refresh-btn');
 
-const setProtocol = document.getElementById('set-protocol');
-const setPreset = document.getElementById('set-preset');
-const setSample = document.getElementById('set-sample');
-const setTimeoutInput = document.getElementById('set-timeout');
-const setTunPingCount = document.getElementById('set-tun-ping-count');
-const setMtu = document.getElementById('set-mtu');
-const setDns = document.getElementById('set-dns');
-const setSaveHistory = document.getElementById('set-save-history');
-const setHistoryLimit = document.getElementById('set-history-limit');
 const settingsSaveBtn = document.getElementById('settings-save-btn');
 const settingsResetBtn = document.getElementById('settings-reset-btn');
 const settingsStatus = document.getElementById('settings-status');
@@ -126,6 +117,18 @@ let currentSniProfile = null;
 let currentLocale = {};
 let contextMenuEndpoint = null;
 
+// Логика связи чекбоксов Telegram
+if (tgCheck && tgOnlyCheck) {
+    tgCheck.addEventListener('change', () => {
+        if (tgCheck.checked) {
+            tgOnlyCheck.disabled = false; // Включаем возможность клика
+        } else {
+            tgOnlyCheck.checked = false;  // Снимаем галочку
+            tgOnlyCheck.disabled = true;  // Блокируем обратно
+        }
+    });
+}
+
 // Подписываемся на события прогресса из Go
 if (window.runtime && window.runtime.EventsOn) {
     window.runtime.EventsOn('progress', (event) => {
@@ -146,8 +149,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     const theme = userSettings?.theme || 'system';
     await applyLanguage(lang);
     applyTheme(theme);
-
-    await applyDefaultSettings();
 
     // Проверяем аккаунт
     let hasAccount = false;
@@ -258,8 +259,8 @@ scanBtn.addEventListener('click', async () => {
     const advanced = advancedToggle.checked;
     const config = {
         protocol: protocolSelect.value,
-        //checkTG: tgCheck.checked,
-        //tgOnly: tgOnlyCheck.checked,
+        checkTG: tgCheck.checked,
+        tgOnly: tgOnlyCheck.checked,
         excludeNodes: excludeNodeInput.value.trim(),
         excludeCountry: excludeCountryInput.value.trim(),
         includeNodes: includeNodeInput.value.trim(),
@@ -407,6 +408,7 @@ function renderResults(endpoints) {
     const hasRegion = endpoints.some(ep => ep.region);
     const hasNode = endpoints.some(ep => ep.node);
     const hasLocation = endpoints.some(ep => ep.nodeLocation);
+    const hasTG = endpoints.some(ep => ep.telegram_status);
 
     const columns = [
         { key: 'endpoint',   label: t('table.endpoint'),   always: true },
@@ -414,6 +416,7 @@ function renderResults(endpoints) {
         { key: 'tunnelPing', label: t('table.tunnelPing'), show: hasTunnelPing },
         { key: 'loss',       label: t('table.loss'),       show: hasLoss },
         { key: 'speed',      label: t('table.speed'),      show: hasSpeed },
+        { key: 'tg', label: 'TG', show: hasTG },
         { key: 'region',     label: t('table.region'),     show: hasRegion },
         { key: 'node',       label: t('table.node'),       show: hasNode },
         { key: 'location',   label: t('table.location'),   show: hasLocation },
@@ -439,7 +442,7 @@ function renderResults(endpoints) {
                 sortDir = sortDir === 'asc' ? 'desc' : 'asc';
             } else {
                 sortKey = key;
-                sortDir = (key === 'speed') ? 'desc' : 'asc';
+                sortDir = (key === 'speed' || key === 'tg') ? 'desc' : 'asc';
             }
             renderResults(endpoints);
         });
@@ -449,6 +452,36 @@ function renderResults(endpoints) {
     const sorted = [...endpoints];
     if (sortKey) {
         sorted.sort((a, b) => {
+            if (sortKey === 'tg') {
+                const getWeight = (status) => {
+                    if (status === 'ok') return 3;
+                    if (status === '3/5') return 2;
+                    if (status === '1/5') return 1;
+                    if (status === 'blocked') return 0;
+                    return -1; // Пустой статус
+                };
+                const wA = getWeight(a.telegram_status);
+                const wB = getWeight(b.telegram_status);
+
+                // 1. Статусы ВСЕГДА идут в фиксированном порядке (ok -> 3/5 -> 1/5 -> blocked).
+                // Стрелка asc/desc на это не влияет.
+                if (wA !== wB) {
+                    return wB - wA; 
+                }
+
+                // 2. Если статусы одинаковые, сортируем по пингу (с учетом направления стрелки)
+                if (wA >= 0) {
+                    // Принудительно приводим к числу на случай, если пришла строка или null
+                    const pA = parseInt(a.telegram_ping, 10) || 999999;
+                    const pB = parseInt(b.telegram_ping, 10) || 999999;
+                    if (pA !== pB) {
+                        return sortDir === 'asc' ? (pA - pB) : (pB - pA);
+                    }
+                }
+                return 0;
+            }
+
+            // Стандартная сортировка для всех остальных колонок
             const av = getSortValue(a, sortKey);
             const bv = getSortValue(b, sortKey);
             if (av < bv) return sortDir === 'asc' ? -1 : 1;
@@ -473,10 +506,29 @@ function renderResults(endpoints) {
         const cells = visibleColumns.map(c => {
             switch (c.key) {
                 case 'endpoint':   return `<td>${ep.endpoint}</td>`;
-                case 'ping':       return `<td>${ep.endpointPingMs ? ep.endpointPingMs.toFixed(0) + ' ' + ms : '—'}</td>`;
+                case 'ping':
+                    if (!ep.endpointPingMs) return `<td>—</td>`;
+                    const p = ep.endpointPingMs;
+                    let pColor = '#f44336'; // Красный по умолчанию (для плохих)
+                    if (p < 50) {
+                        pColor = '#4caf50'; // Зеленый
+                    } else if (p < 150) {
+                        pColor = '#ff9800'; // Оранжевый
+                    }                    
+                    return `<td style="color: ${pColor}; font-weight: 500;">${p.toFixed(0)} ${ms}</td>`;
                 case 'tunnelPing': return `<td>${ep.tunnelPingMs ? ep.tunnelPingMs.toFixed(0) + ' ' + ms : '—'}</td>`;
                 case 'loss':       return `<td>${ep.lossPercent ? ep.lossPercent.toFixed(0) + percent : '—'}</td>`;
                 case 'speed':      return `<td>${ep.speedMbps ? ep.speedMbps.toFixed(1) + ' ' + mbps : '—'}</td>`;
+                case 'tg':
+                    if (ep.telegram_status === 'ok') {
+                        return `<td style="color: #4caf50;">ok (${ep.telegram_ping}ms)</td>`;
+                    } else if (ep.telegram_status === 'blocked') {
+                        return `<td style="color: #f44336;">${ep.telegram_status}</td>`;
+                    } else if (ep.telegram_status) {
+                        // Для вариантов вида 1/5, 3/5, 4/5
+                        return `<td style="color: #ff9800;">${ep.telegram_status}</td>`;
+                    }
+                    return `<td>—</td>`;
                 case 'region':     return `<td>${ep.region || '—'}</td>`;
                 case 'node':       return `<td>${ep.node || '—'}</td>`;
                 case 'location':   return `<td>${ep.nodeLocation || '—'}</td>`;
@@ -524,6 +576,7 @@ function getSortValue(ep, key) {
         case 'tunnelPing': return ep.tunnelPingMs ?? Infinity;
         case 'loss':       return ep.lossPercent ?? Infinity;
         case 'speed':      return ep.speedMbps ?? -Infinity; // скорость: больше = лучше
+        case 'tg':         return ep.telegram_status || '';
         case 'region':     return ep.region || '';
         case 'node':       return ep.node || '';
         case 'location':   return ep.nodeLocation || '';
@@ -1098,15 +1151,6 @@ advPort.addEventListener('input', () => {
 async function loadSettings() {
     try {
         const s = await window.go.main.App.LoadSettings();
-        setProtocol.value = s.defaultProtocol || 'awg';
-        setPreset.value = s.defaultPreset || 'standard';
-        setSample.value = s.defaultSamplePerSubnet || 5;
-        setTimeoutInput.value = s.defaultTimeoutSec || 2;
-        setTunPingCount.value = s.defaultTunnelPingCount || 0;
-        setMtu.value = s.defaultMtu || 0;
-        setDns.value = s.defaultDns || '';
-        setSaveHistory.checked = s.saveHistoryEnabled !== false;
-        setHistoryLimit.value = s.historyLimit || 50;
         setTheme.value = s.theme || 'blacksoft';
         setLanguage.value = s.language || 'ru';
         applyTheme(s.theme || 'blacksoft');
@@ -1118,15 +1162,8 @@ async function loadSettings() {
 
 async function saveSettings() {
     const settings = {
-        defaultProtocol: setProtocol.value,
-        defaultPreset: setPreset.value,
-        defaultSamplePerSubnet: parseInt(setSample.value) || 5,
-        defaultTimeoutSec: parseInt(setTimeoutInput.value) || 2,
-        defaultTunnelPingCount: parseInt(setTunPingCount.value) || 0,
-        defaultMtu: parseInt(setMtu.value) || 0,
-        defaultDns: setDns.value.trim(),
-        saveHistoryEnabled: setSaveHistory.checked,
-        historyLimit: parseInt(setHistoryLimit.value) || 50,
+        saveHistoryEnabled: true,   // Всегда включено
+        historyLimit: 50,           // Дефолтный лимит
         theme: setTheme.value,
         language: setLanguage.value,
     };
@@ -1145,16 +1182,6 @@ async function saveSettings() {
 settingsSaveBtn.addEventListener('click', saveSettings);
 
 settingsResetBtn.addEventListener('click', async () => {
-    // Сбрасываем к умолчаниям и сохраняем
-    setProtocol.value = 'awg';
-    setPreset.value = 'standard';
-    setSample.value = 5;
-    setTimeoutInput.value = 2;
-    setTunPingCount.value = 0;
-    setMtu.value = 0;
-    setDns.value = '';
-    setSaveHistory.checked = true;
-    setHistoryLimit.value = 50;
     setTheme.value = 'system';
     applyTheme('system'); 
     const sysLang = userSettings?.language || 'ru';
@@ -1162,42 +1189,6 @@ settingsResetBtn.addEventListener('click', async () => {
     await applyLanguage(sysLang);
     await saveSettings();
 });
-
-async function applyDefaultSettings() {
-    try {
-        const s = await window.go.main.App.LoadSettings();
-
-        // Протокол
-        if (s.defaultProtocol) {
-            protocolSelect.value = s.defaultProtocol;
-        }
-
-        // Пресет
-        if (s.defaultPreset) {
-            presetSelect.value = s.defaultPreset;
-        }
-
-        // Значения по умолчанию для продвинутой панели
-        if (s.defaultSamplePerSubnet) {
-            // Это значение используется как fallback, если в пресете 0
-            // Но если пользователь откроет продвинутую панель, там уже будут сохранённые значения
-        }
-        if (s.defaultTimeoutSec) {
-            setTimeoutInput.value = s.defaultTimeoutSec;
-        }
-        if (s.defaultTunnelPingCount > 0) {
-            advTunPingCount.value = s.defaultTunnelPingCount;
-        }
-        if (s.defaultMtu > 0) {
-            advMtu.value = s.defaultMtu;
-        }
-        if (s.defaultDns) {
-            advDns.value = s.defaultDns;
-        }
-    } catch (err) {
-        console.error('applyDefaultSettings failed:', err);
-    }
-}
 
 function applyTheme(name) {
     if (!name) name = 'system';
@@ -1247,18 +1238,12 @@ settingsImportBtn.addEventListener('click', async () => {
             return;
         }
 
-        // Применяем импортированные настройки к UI
-        setProtocol.value = s.defaultProtocol || 'awg';
-        setPreset.value = s.defaultPreset || 'standard';
-        setSample.value = s.defaultSamplePerSubnet || 5;
-        setTimeoutInput.value = s.defaultTimeoutSec || 2;
-        setTunPingCount.value = s.defaultTunnelPingCount || 0;
-        setMtu.value = s.defaultMtu || 0;
-        setDns.value = s.defaultDns || '';
-        setSaveHistory.checked = s.saveHistoryEnabled !== false;
-        setHistoryLimit.value = s.historyLimit || 50;
         setTheme.value = s.theme || 'blacksoft';
         applyTheme(s.theme || 'blacksoft');
+        if (s.language) {
+            setLanguage.value = s.language;
+            await applyLanguage(s.language);
+        }
 
         settingsStatus.textContent = t('settings.imported');
         settingsStatus.style.color = 'var(--success)';
@@ -1536,7 +1521,7 @@ async function applyLanguage(lang) {
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.dataset.i18n;
         const text = getNestedValue(currentLocale, key);
-        if (text) el.textContent = text;
+        if (text) el.innerHTML = text;
     });
 
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {

@@ -37,6 +37,10 @@ type (
 		exit     string
 		colo     string
 		torn     bool
+		tgSeen   bool
+		tg     time.Duration
+		tgDCs  uint8
+		tgOK   bool
 	}
 	speedMsg struct {
 		endpoint string
@@ -279,6 +283,10 @@ func countNode(nodes []nodeStat, msg foundMsg) []nodeStat {
 }
 
 func lessLatency(a, b foundMsg) bool {
+	// Если у одного есть TG, а у другого нет — TG всегда выше
+	if a.tgOK != b.tgOK {
+		return a.tgOK
+	}
 	if a.loss != b.loss {
 		return a.loss < b.loss
 	}

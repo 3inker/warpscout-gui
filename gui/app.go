@@ -67,13 +67,6 @@ type HistoryEntry struct {
 
 // Settings — настройки приложения, сохраняемые между запусками.
 type Settings struct {
-    DefaultProtocol        string `json:"defaultProtocol"`
-    DefaultPreset          string `json:"defaultPreset"`
-    DefaultSamplePerSubnet int    `json:"defaultSamplePerSubnet"`
-    DefaultTimeoutSec      int    `json:"defaultTimeoutSec"`
-    DefaultTunnelPingCount int    `json:"defaultTunnelPingCount"`
-    DefaultMTU             int    `json:"defaultMtu"`
-    DefaultDNS             string `json:"defaultDns"`
     SaveHistoryEnabled     bool   `json:"saveHistoryEnabled"`
     HistoryLimit           int    `json:"historyLimit"`
     Theme                  string `json:"theme"`
@@ -90,7 +83,7 @@ type UpdateInfo struct {
     Error       string `json:"error,omitempty"`
 }
 
-const CurrentVersion = "0.1.0"
+const CurrentVersion = "0.2.0"
 const checkForUpdatesURL = "https://api.github.com/repos/3inker/warpscout-gui/releases/latest"
 
 // UpdateCache — кеш проверки обновлений.
@@ -232,6 +225,8 @@ func (a *App) StartScan(config ScanConfig) (core.ScanReport, error) {
         MASQUESNI: config.MASQUESNI,
         ThroughEndpoint: config.ThroughEndpoint,
         InnerProtocol:   core.Protocol(config.InnerProtocol),
+        CheckTelegram: config.CheckTG,
+        TelegramOnly:  config.TGOnly,
     }
 
     sink := func(event core.ProgressEvent) {
@@ -565,13 +560,6 @@ func (a *App) settingsPath() string {
 // defaultSettings возвращает настройки по умолчанию.
 func defaultSettings() Settings {
     return Settings{
-        DefaultProtocol:        "awg",
-        DefaultPreset:          "standard",
-        DefaultSamplePerSubnet: 5,
-        DefaultTimeoutSec:      2,
-        DefaultTunnelPingCount: 0,
-        DefaultMTU:             0,
-        DefaultDNS:             "",
         SaveHistoryEnabled:     true,
         HistoryLimit:           50,
         Theme:                  "system",
@@ -584,14 +572,14 @@ func (a *App) LoadSettings() (Settings, error) {
     path := a.settingsPath()
     data, err := os.ReadFile(path)
     validThemes := map[string]bool{
-    "system":     true,
-    "blacksoft":  true,
-    "qdarkstyle": true,
-    "flatgray":   true,
-    "light":      true,
-    "lightblue":  true,
-    "softpink":   true,
-}
+        "system":     true,
+        "blacksoft":  true,
+        "qdarkstyle": true,
+        "flatgray":   true,
+        "light":      true,
+        "lightblue":  true,
+        "softpink":   true,
+    }
     if err != nil {
         if os.IsNotExist(err) {
             return defaultSettings(), nil
@@ -604,14 +592,10 @@ func (a *App) LoadSettings() (Settings, error) {
     }
     // Заполняем пропущенные поля значениями по умолчанию
     def := defaultSettings()
-    if s.DefaultProtocol == "" { s.DefaultProtocol = def.DefaultProtocol }
-    if s.DefaultPreset == "" { s.DefaultPreset = def.DefaultPreset }
-    if s.DefaultSamplePerSubnet == 0 { s.DefaultSamplePerSubnet = def.DefaultSamplePerSubnet }
-    if s.DefaultTimeoutSec == 0 { s.DefaultTimeoutSec = def.DefaultTimeoutSec }
     if s.HistoryLimit == 0 { s.HistoryLimit = def.HistoryLimit }
     if !validThemes[s.Theme] {
-    s.Theme = def.Theme
-}
+        s.Theme = def.Theme
+    }
     if s.Language == "" { s.Language = def.Language }
     return s, nil
 }

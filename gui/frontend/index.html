@@ -136,6 +136,14 @@
                         <input type="checkbox" id="advanced-toggle">
                         <span data-i18n="scan.advanced">Продвинутые параметры</span>
                     </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="tg-check">
+                        <span data-i18n="scan.checkTG">Проверять Telegram</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="tg-only-check" disabled>
+                        <span data-i18n="scan.tgOnly">Только с Telegram</span>
+                    </label>
                 </div>
                 <div class="controls-row">
                     <label>
@@ -332,47 +340,7 @@
         <!-- Вкладка: Настройки -->
         <section class="tab-content" id="tab-settings">
             <div class="settings-container">
-                <h2 data-i18n="settings.title">Настройки</h2>
-                <div class="settings-group">
-                    <h3 data-i18n="settings.defaults">Сканирование по умолчанию</h3>
-                    <div class="settings-grid">
-                        <label>
-                            <span data-i18n="settings.protocol">Протокол</span>
-                            <select id="set-protocol">
-                                <option value="awg">AmneziaWG</option>
-                                <option value="wg">WireGuard</option>
-                            </select>
-                        </label>
-                        <label>
-                            <span data-i18n="settings.preset">Пресет</span>
-                            <select id="set-preset">
-                                <option value="standard">Standard</option>
-                                <option value="durable">Durable</option>
-                                <option value="full">Full</option>
-                            </select>
-                        </label>
-                        <label>
-                            <span data-i18n="settings.sample">Адресов на подсеть</span>
-                            <input type="number" id="set-sample" min="1" max="256">
-                        </label>
-                        <label>
-                            <span data-i18n="settings.timeout">Таймаут (сек)</span>
-                            <input type="number" id="set-timeout" min="1" max="30">
-                        </label>
-                        <label>
-                            <span data-i18n="settings.tunPingCount">Echo-запросов</span>
-                            <input type="number" id="set-tun-ping-count" min="0" max="100">
-                        </label>
-                        <label>
-                            <span data-i18n="settings.mtu">MTU</span>
-                            <input type="number" id="set-mtu" min="0" max="1500">
-                        </label>
-                        <label>
-                            <span data-i18n="settings.dns">DNS</span>
-                            <input type="text" id="set-dns" placeholder="1.1.1.1, 1.0.0.1">
-                        </label>
-                    </div>
-                </div>
+                <h2 data-i18n="settings.title">Настройки</h2>                
                 <div class="settings-group">
                     <h3 data-i18n="settings.appearance">Внешний вид</h3>
                     <div class="settings-grid">
@@ -397,19 +365,7 @@
                         </label>
                     </div>
                 </div>
-                <div class="settings-group">
-                    <h3 data-i18n="settings.history">История</h3>
-                    <div class="settings-grid">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="set-save-history">
-                            <span data-i18n="settings.saveHistory">Сохранять историю сканирований</span>
-                        </label>
-                        <label>
-                            <span data-i18n="settings.historyLimit">Максимум записей</span>
-                            <input type="number" id="set-history-limit" min="1" max="500">
-                        </label>
-                    </div>
-                </div>
+                <div class="settings-group"></div>
                 <div class="settings-group" id="updates-section">
                     <h3 data-i18n="settings.updates">Обновления</h3>
                     <div class="update-info">
@@ -442,50 +398,49 @@
         <!-- Вкладка: Помощь -->
         <section class="tab-content" id="tab-help">
             <div class="help-container">
-                <h2 data-i18n="help.title">Как найти рабочий эндпоинт</h2>
+                <h2 data-i18n="help.title">Руководство по WarpScout</h2>
+                
                 <div class="help-section">
-                    <h3 data-i18n="help.step1Title">1. Запустите сканирование</h3>
-                    <p data-i18n="help.step1Text">Выберите протокол AmneziaWG и пресет Standard. Нажмите «Сканировать».</p>
+                    <h3 data-i18n="help.step1Title">1. Базовое сканирование</h3>
+                    <p data-i18n="help.step1Text"></p>
                 </div>
+
                 <div class="help-section">
-                    <h3 data-i18n="help.step2Title">2. Посмотрите на узлы</h3>
-                    <p data-i18n="help.step2Text">В таблице есть колонка NODE. Это код дата-центра Cloudflare: DME – Москва, HEL – Хельсинки, ARN – Стокгольм, и другие.</p>
-                </div>
-                <div class="help-section">
-                    <h3 data-i18n="help.step3Title">3. Узлы в России часто блокируются</h3>
-                    <p data-i18n="help.step3Text">Если эндпоинты через DME не работают с нужными сервисами, исключите их:</p>
+                    <h3 data-i18n="help.step2Title">2. Проверка Telegram</h3>
+                    <p data-i18n="help.step2Text"></p>
                     <ul>
-                        <li><span data-i18n="help.step3Item1">Поле «Исключить узлы»</span> → <code>DME</code></li>
-                        <li><span data-i18n="help.step3Item2">Поле «Исключить страны»</span> → <code>RU</code></li>
+                        <li data-i18n="help.step2Item1"></li>
+                        <li data-i18n="help.step2Item2"></li>
+                        <li data-i18n="help.step2Item3"></li>
+                    </ul>
+                    <p data-i18n="help.step2Outro"></p>
+                </div>
+
+                <div class="help-section">
+                    <h3 data-i18n="help.step3Title">3. Авто-подбор I1 (AmneziaWG)</h3>
+                    <p data-i18n="help.step3Text"></p>
+                </div>
+
+                <div class="help-section">
+                    <h3 data-i18n="help.step4Title">4. Фильтрация узлов</h3>
+                    <p data-i18n="help.step4Text"></p>
+                    <ul>
+                        <li data-i18n="help.step4Item1"></li>
+                        <li data-i18n="help.step4Item2"></li>
                     </ul>
                 </div>
+
                 <div class="help-section">
-                    <h3 data-i18n="help.step4Title">4. Оставьте только нужные</h3>
-                    <p data-i18n="help.step4Text">Если хотите конкретные узлы:</p>
-                    <ul>
-                        <li><span data-i18n="help.step4Item1">Поле «Включить узлы»</span> → <code>HEL, ARN</code></li>
-                        <li><span data-i18n="help.step4Item2">Поле «Включить страны»</span> → <code>FI, SE</code></li>
-                    </ul>
+                    <h3 data-i18n="help.step5Title">5. Сохранение конфига</h3>
+                    <p data-i18n="help.step5Text"></p>
                 </div>
-                <div class="help-section">
-                    <h3 data-i18n="help.step5Title">5. Настройте параметры сканирования</h3>
-                    <p data-i18n="help.step5Text">Откройте «Продвинутые параметры»:</p>
-                    <ul>
-                        <li><strong>SamplePerSubnet</strong> – <span data-i18n="help.step5Item1">сколько адресов проверять в подсети (больше = дольше, но полнее)</span></li>
-                        <li><strong>TunnelPingCount</strong> – <span data-i18n="help.step5Item2">добавьте 10, чтобы увидеть Tun Ping и Потери</span></li>
-                        <li><strong>SpeedTest</strong> – <span data-i18n="help.step5Item3">замер скорости (долго, но полезно)</span></li>
-                    </ul>
-                </div>
-                <div class="help-section">
-                    <h3 data-i18n="help.step6Title">6. Сохраните конфиг</h3>
-                    <p data-i18n="help.step6Text">Кликните на строку с лучшим эндпоинтом и нажмите «Сохранить выбранный». Или «Сохранить лучший» – для самого быстрого.</p>
-                </div>
+
                 <div class="help-section">
                     <h3 data-i18n="help.tipsTitle">Полезные советы</h3>
                     <ul>
-                        <li><span data-i18n="help.tip1">Если стандартные порты заблокированы – используйте «Перебор портов» в продвинутой панели.</span></li>
-                        <li><span data-i18n="help.tip2">Если AmneziaWG не проходит – попробуйте MASQUE (TCP), он часто работает там, где AWG блокируется.</span></li>
-                        <li><span data-i18n="help.tip3">Если ничего не находит – запустите «Поиск AWG junk» на вкладке «Инструменты».</span></li>
+                        <li data-i18n="help.tip1"></li>
+                        <li data-i18n="help.tip2"></li>
+                        <li data-i18n="help.tip3"></li>
                     </ul>
                 </div>
             </div>

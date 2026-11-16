@@ -525,6 +525,9 @@ func runScan(ctx context.Context, opts options, run protoRun, ips []netip.Addr, 
 	results := make([]endpointResult, len(targets))
 	pings := opts.tunPingCount
 	label := fmt.Sprintf("Phase 2: verifying tunnels (proto=%s)", run.name)
+	if genI1Label != "" {
+		label = fmt.Sprintf("I1 %s · %s", genI1Label, label)
+	}
 	emit(barBeginMsg{label: label, total: len(targets)})
 	work := func(tn tunnel, i int) {
 		defer emit(probedMsg{})
@@ -535,6 +538,15 @@ func runScan(ctx context.Context, opts options, run protoRun, ips []netip.Addr, 
 			if pings > 0 {
 				r.tunPing, r.loss, r.measured, r.durable = rtt, loss, true, !torn
 			}
+			if opts.tg && r.durable { 
+				r.tgSeen = true
+				r.tg, r.tgDCs = tn.stack().telegramRTT(ctx, timeout)
+				r.tgOK = r.tgDCs == allDCs
+				if opts.tgOnly && !r.tgOK {
+					r.ok = false
+				}
+			}
+
 			// Host ICMP measures the direct path, which a nested run does not take;
 			// from inside the outer tunnel the same echo walks the real one.
 			if outer == nil {
@@ -544,7 +556,21 @@ func runScan(ctx context.Context, opts options, run protoRun, ips []netip.Addr, 
 			} else if hrtt, pok := outer.pingTo(ip, timeout); pok {
 				r.epPing = hrtt
 			}
-			found := foundMsg{endpoint: endpoint, epPing: r.epPing, tunPing: r.tunPing, loss: r.loss, measured: r.measured, torn: !r.durable}
+			
+			// Добавляем данные о Telegram в foundMsg
+			found := foundMsg{
+				endpoint: endpoint, 
+				epPing: r.epPing, 
+				tunPing: r.tunPing, 
+				loss: r.loss, 
+				measured: r.measured, 
+				torn: !r.durable,
+				tgSeen: r.tgSeen,
+				tg: r.tg, 
+				tgDCs: r.tgDCs, 
+				tgOK: r.tgOK,
+			}
+			
 			if opts.wantMeta {
 				found.exit, found.colo = exitRegion(t), exitColo(t)
 			}

@@ -239,6 +239,9 @@ body {
 
 .tab-content.active {
     display: flex;
+    flex-direction: column;
+    height: 100%; /* Добавь эту строку */
+    min-height: 0; /* И эту, чтобы flex-контейнер не ломался */
 }
 
 /* ============ ФОРМЫ (УНИВЕРСАЛЬНО) ============ */
@@ -386,6 +389,20 @@ button:disabled {
     position: relative;
     transition: background 0.15s, border-color 0.15s;
     flex-shrink: 0;
+}
+
+/* Стили для неактивного (disabled) чекбокса */
+.checkbox-label input[type="checkbox"]:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: var(--bg-alt);
+    border-color: var(--border);
+}
+
+/* Делаем текст метки тоже тусклым, если чекбокс выключен */
+.checkbox-label:has(input[type="checkbox"]:disabled) {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .checkbox-label input[type="checkbox"]:hover {
@@ -556,16 +573,6 @@ tbody tr.selected:hover {
 
 /* ============ ИНСТРУМЕНТЫ ============ */
 
-.tools-container {
-    padding: 20px;
-    overflow: auto;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-}
-
 .tool-card {
     width: 100%;
     max-width: 900px;
@@ -726,15 +733,6 @@ tbody tr.selected:hover {
 
 /* ============ ИСТОРИЯ ============ */
 
-.history-container {
-    padding: 20px;
-    overflow: auto;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
 .history-header,
 .history-list {
     width: 100%;
@@ -801,15 +799,6 @@ tbody tr.selected:hover {
 }
 
 /* ============ НАСТРОЙКИ ============ */
-
-.settings-container {
-    padding: 20px;
-    overflow: auto;
-    flex: 1;
-    width: 100%;
-    max-width: 900px;
-    margin: 0 auto;
-}
 
 .settings-container h2 {
     font-size: 16px;
@@ -926,15 +915,6 @@ tbody tr.selected:hover {
 }
 
 /* ============ ПОМОЩЬ ============ */
-
-.help-container {
-    padding: 24px 20px;
-    overflow: auto;
-    flex: 1;
-    max-width: 900px;
-    margin: 0 auto;
-    width: 100%;
-}
 
 .help-container h2 {
     font-size: 18px;
@@ -1116,4 +1096,48 @@ tbody tr.selected:hover {
 
 .context-menu-item:focus-visible {
     outline: none;
+}
+
+/* ============ УНИВЕРСАЛЬНЫЙ КОНТЕЙНЕР (Настройки, Помощь, История) ============ */
+.history-container,
+.settings-container,
+.help-container {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px 24px;
+    box-sizing: border-box;
+    display: block; /* Обычный блок: отступы схлопываются, нет растягивания */
+}
+
+/* Центрируем контент по 900px */
+.history-container > *,
+.settings-container > *,
+.help-container > * {
+    width: 100%;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* ============ ИНСТРУМЕНТЫ (Только для карточек) ============ */
+.tools-container {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px 24px;
+    box-sizing: border-box;
+    display: flex; /* Возвращаем flex, чтобы карточки не слипались */
+    flex-direction: column;
+    align-items: center; /* Центрируем карточки */
+    gap: 16px; /* Тот самый отступ между карточками */
+}
+
+.tools-container > * {
+    width: 100%;
+    max-width: 900px;
 }

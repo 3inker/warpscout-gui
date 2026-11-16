@@ -64,6 +64,8 @@ type options struct {
 	full           bool
 	plain          bool
 	emoji          bool
+	tg     bool
+	tgOnly bool
 }
 
 type flagSpec struct {
@@ -278,6 +280,8 @@ func setupScanFlags(fs *flag.FlagSet, o *options) {
 	fs.BoolVar(&o.noDNS, "no-dns", false, "")
 	fs.BoolVar(&o.plain, "plain", false, "")
 	fs.BoolVar(&o.emoji, "emoji", false, "")
+	fs.BoolVar(&o.tg, "tg", false, "")
+	fs.BoolVar(&o.tgOnly, "tg-only", false, "")
 	o.wantMeta = true
 }
 

@@ -69,6 +69,8 @@ type ScanOptions struct {
 	PingTarget          string   `json:"pingTarget,omitempty"`
 	ThroughEndpoint     string   `json:"throughEndpoint,omitempty"`
 	ConfigurationFormat string   `json:"configurationFormat,omitempty"`
+	CheckTelegram bool `json:"check_telegram"`
+	TelegramOnly  bool `json:"telegram_only"`
 }
 
 type EndpointResult struct {
@@ -84,6 +86,8 @@ type EndpointResult struct {
 	SpeedMbps      float64 `json:"speedMbps,omitempty"`
 	Working        bool    `json:"working"`
 	Durable        bool    `json:"durable"`
+	TelegramStatus string `json:"telegram_status"`
+	TelegramPing   int64  `json:"telegram_ping"`
 }
 
 type ScanReport struct {

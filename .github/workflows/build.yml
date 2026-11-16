@@ -23,20 +23,37 @@ jobs:
       - name: Install Wails
         run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
 
+      - name: Update Version Info
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          if (-not $version) { $version = "0.0.0" }
+          
+          $infoFile = "gui/build/windows/info.json"
+          if (Test-Path $infoFile) {
+              $info = Get-Content $infoFile -Raw | ConvertFrom-Json
+              $info.fixed.file_version = "$version.0"
+              $info.info.0000.ProductVersion = "$version.0"
+              $info | ConvertTo-Json -Depth 10 | Set-Content $infoFile
+          }
+
       - name: Build
         working-directory: gui
-        run: wails build -platform windows/amd64 -clean
+        run: wails build -platform windows/amd64 -clean -ldflags "-X main.CurrentVersion=${{ github.ref_name }}"
 
       - name: Rename binary
         working-directory: gui/build/bin
         shell: bash
-        run: mv WarpScoutGUI.exe WarpScoutGUI-windows.exe
+        run: |
+          VERSION="${{ github.ref_name }}"
+          if [ -z "$VERSION" ]; then VERSION="dev"; fi
+          mv WarpScoutGUI.exe "WarpScoutGUI-windows-${VERSION}.exe"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: WarpScout-windows
-          path: gui/build/bin/WarpScoutGUI-windows.exe
+          path: gui/build/bin/WarpScoutGUI-windows-*.exe
 
   release:
     needs: build
@@ -58,4 +75,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: artifacts/**/*
-          body_path: .github/RELEASE_NOTES.md
+          generate_release_notes: true
